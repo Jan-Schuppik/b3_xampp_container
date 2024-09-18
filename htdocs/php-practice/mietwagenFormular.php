@@ -23,6 +23,9 @@ enum Zusatzausstattung: string
     case STANDHEIZUNG = "standheizung";
 }
 
+
+session_start();
+
 renderPage();
 
 /**
@@ -65,17 +68,23 @@ function renderPage(): void
             <img src="../img/Nettmann_logo.png" alt="Nettmann Logo" width="250" height="80">
         </header>
     ';
-    if (empty($_POST)) {
-        echo '<h1>Mietwagen</h1>';
-        renderMietwagenForm();
-    } else {
-        echo '<h1>Mietwagen - Kundenbeleg</h1>';
-        renderMietwagenBeleg();
-    }
+
+    $loggedIn = setContent();
+
 
     echo '
     <footer>
         <hr color="blue"/>
+        ';
+    if ($loggedIn) {
+        echo '
+        <form action="mietwagenFormular.php" method="POST" >
+        <input type="submit" name="logout" value="Logout">
+        </form>
+        ';
+    }
+    echo '
+
         <div style="display: flex; justify-content: space-between">
             <div>
                 <p>Kontakt:</p>
@@ -102,6 +111,46 @@ function renderPage(): void
 
 }
 
+
+/**
+ * setContent decides what page-content to render
+ *
+ * @return bool
+ */
+function setContent(): bool
+{
+    $loggedIn = false;
+    if (isset($_POST['logout'])) {
+        session_destroy();
+        renderLogin();
+    } else {
+        if (isset($_SESSION['userId']) && $_SESSION['userId'] == 1) {
+            $loggedIn = true;
+            if (!isset($_POST['submitted'])) {
+                echo '<h1>Mietwagen</h1>';
+                renderMietwagenForm();
+            } else {
+                echo '<h1>Mietwagen - Kundenbeleg</h1>';
+                renderMietwagenBeleg();
+            }
+        } elseif (isset($_POST['username']) && isset($_POST['password'])) {
+            if (validateUserCredentials($_POST['username'], $_POST['password'])) {
+                $_SESSION['userId'] = 1;
+                $_SESSION['kundennummer'] = getKundennummer($_POST['username']);
+                header('Location: mietwagenFormular.php');
+                exit();
+            } else {
+                echo '<h1 style="color: red;">Login Failed</h1>';
+                renderLogin();
+            }
+        } else {
+            renderLogin();
+        }
+    }
+
+    return $loggedIn;
+}
+
 /**
  * renderMietwagenForm renders the form for the mietwagen
  *
@@ -109,11 +158,11 @@ function renderPage(): void
  */
 function renderMietwagenForm(): void
 {
-    echo '
-    <form action="mietwagenFormular.php" method="post">
-        <label for="kundennummer">Kundennummer:</label>
-        <input type="text" id="kundennummer" name="kundennummer"><br><br>
-        ';
+    $kundennummer = $_SESSION['kundennummer'] ?? '';
+    echo "
+    <form action='mietwagenFormular.php' method='post'>
+        <p>Kundennummer: $kundennummer</p>
+        ";
 
     echo createFieldset(
         'Welche Fahrzeugklasse bevorzugen Sie:',
@@ -139,7 +188,7 @@ function renderMietwagenForm(): void
 
     echo '
         <input type="reset" value="Löschen">
-        <button type="submit">Absenden</button>
+        <button type="submit" name="submitted">Absenden</button>
     </form>
     ';
 }
@@ -149,48 +198,77 @@ function renderMietwagenForm(): void
  *
  * @return void
  */
-function renderMietwagenBeleg() :void
+function renderMietwagenBeleg(): void
 {
     echo "<main>";
-    if (empty($_POST["kundennummer"])) {
+    $values = ['fahrzeugklasse' => $_POST['fahrzeugklasse'], 'zusatzausstattung' => $_POST['zusatzausstattung'] ?? ['Nichts angegeben'], 'abholort' => $_POST['abholort']];
+    if ($values['abholort'] == 'unbekannt') {
         echo "
-        <h2 style='color: red;'>Bitte geben Sie eine Kundennummer ein!</h2>
-        <button><a href='mietwagenFormular.php' style='font-size: 2em; text-decoration: none'>Zurück zum Formular</a></button>
-        ";
-
-    } else {
-        $values = $_POST;
-        if ($values['abholort'] == 'unbekannt') {
-            echo "
             <h2 style='color: red;'>Bitte geben Sie einen gültigen Abholort ein!</h2>
             <button><a href='mietwagenFormular.php' style='font-size: 2em; text-decoration: none'>Zurück zum Formular</a></button>
             ";
-            return;
-        }
+        return;
+    }
 
-        echo "<table>";
+    $kundennummer = $_SESSION['kundennummer'] ?? '';
+    echo "<p>Kundennummer: $kundennummer</p>";
+    echo "<table>";
 
-        foreach ($values as $key => $value) {
-            $ucfKey = ucfirst($key);
-            echo "
+    foreach ($values as $key => $value) {
+        $ucfKey = ucfirst($key);
+        echo "
             <tr>
             <td>$ucfKey:</td>
             ";
-            if ($key === "zusatzausstattung") {
-                echo "<td>";
-                foreach ($value as $item) {
-                    echo "<p>$item</p>";
-                }
-                echo "</td>";
-            } else {
-                echo "<td>$value</td>";
+        if ($key === "zusatzausstattung") {
+            echo "<td>";
+            foreach ($value as $item) {
+                echo "<p>$item</p>";
             }
-            echo "</tr>";
+            echo "</td>";
+        } else {
+            echo "<td>$value</td>";
         }
-        echo "</table>";
+        echo "</tr>";
     }
+    echo "</table>";
+
     echo "</main>";
 
+}
+
+/**
+ * renderLogin renders the login form
+ *
+ * @return void
+ */
+function renderLogin(): void
+{
+    echo '
+    <form action="mietwagenFormular.php" method="post">
+        <table>
+            <tbody>
+                <tr>
+                    <td>
+                        <label for="username">User ID:</label>
+                    </td>
+                    <td>
+                        <input type="text" id="username" name="username" required><br><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="password">Password:</label>
+                    </td>
+                    <td>
+                        <input type="password" id="password" name="password" required><br><br>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="submit">Login</button>
+    </form>
+    ';
 }
 
 /**
@@ -230,7 +308,9 @@ function createInput(string $type, string $kind, string $name, bool $checked = f
 function createFieldset(string $legend, array $entries, string $kind, string $type, unitEnum $checkedElement = null): string
 {
     $checkedElement = $checkedElement?->value;
-    $values = array_map(function($entry) {return $entry->value;}, $entries);
+    $values = array_map(function ($entry) {
+        return $entry->value;
+    }, $entries);
 
     $result = "
     <fieldset>
@@ -265,7 +345,9 @@ function createFieldset(string $legend, array $entries, string $kind, string $ty
 function createSelect(string $name, array $entries, string $labelContent, unitEnum $selection = null): string
 {
     $selection = $selection?->value;
-    $values = array_map(function($entry) {return $entry->value;}, $entries);
+    $values = array_map(function ($entry) {
+        return $entry->value;
+    }, $entries);
 
     $result = "
     <label for='$name'>$labelContent</label>
@@ -285,6 +367,43 @@ function createSelect(string $name, array $entries, string $labelContent, unitEn
         <br/>
         <br/>
         ";
-    
+
     return $result;
+}
+
+/**
+ * validateUserCredentials validates the user credentials
+ *
+ * @param string $username
+ * @param string $password
+ *
+ * @return bool
+ */
+function validateUserCredentials(string $username, string $password): bool
+{
+    $usersJson = file_get_contents(__DIR__ . '/../../config/user.json');
+    $users = json_decode($usersJson);
+
+    if (isset($users->$username)){
+        $user = $users->$username;
+        if ($user->password === $password){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * getKundennummer gets the kundennummer from the user.json
+ *
+ * @param string $username
+ *
+ * @return string
+ */
+function getKundennummer(string $username): string
+{
+    $usersJson = file_get_contents(__DIR__ . '/../../config/user.json');
+
+    return json_decode($usersJson)->$username->kundennummer;
 }
