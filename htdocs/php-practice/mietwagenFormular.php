@@ -8,20 +8,28 @@ enum Abholort: string
     case HBF = "Hauptbahnhof";
 }
 
-renderPage();
-
-
-function getAbholort(String $string): string
+enum Fahrzeugklasse: string
 {
-    return match ($string) {
-        "TS" => Abholort::TS->value,
-        "SB" => Abholort::SB->value,
-        "AN" => Abholort::AN->value,
-        "HBF" => Abholort::HBF->value,
-        default => "Unbekannt",
-    };
+    case KLEINWAGEN = "kleinwagen";
+    case MITTELKLASSE = "mittelklasse";
+    case FAMILIENWAGEN = "familienwagen";
+    case LUXUSKLASSE = "luxusklasse";
 }
 
+enum Zusatzausstattung: string
+{
+    case KLIMAANLAGE = "klimaanlage";
+    case NAVIGATOR = "navigator";
+    case STANDHEIZUNG = "standheizung";
+}
+
+renderPage();
+
+/**
+ * renderPage renders the page
+ *
+ * @return void
+ */
 function renderPage(): void
 {
     echo '
@@ -94,85 +102,87 @@ function renderPage(): void
 
 }
 
+/**
+ * renderMietwagenForm renders the form for the mietwagen
+ *
+ * @return void
+ */
 function renderMietwagenForm(): void
 {
     echo '
     <form action="mietwagenFormular.php" method="post">
         <label for="kundennummer">Kundennummer:</label>
         <input type="text" id="kundennummer" name="kundennummer"><br><br>
-        <fieldset aria-required="true">
-            <legend>Welche Fahrzeugklasse bevorzugen Sie:</legend>
-            <input type="radio" name="fahrzeugklasse" value="Kleinwagen" id="kleinwagen" required checked>
-            <label for="kleinwagen">Kleinwagen</label>
-            <br/>
-            <input type="radio" name="fahrzeugklasse" value="Mittelklasse" id="mittelklasse">
-            <label for="mittelklasse">Mittelklasse</label>
-            <br/>
-            <input type="radio" name="fahrzeugklasse" value="Familenwagen" id="familienwagen">
-            <label for="familienwagen">Familienwagen</label>
-            <br/>
-            <input type="radio" name="fahrzeugklasse" value="Luxusklasse" id="luxusklasse">
-            <label for="luxusklasse">Luxusklasse</label>
-        </fieldset>
-        <br/>
-        <fieldset>
-            <legend>Welche Zusatzausstattung wünschen Sie:</legend>
-            <input type="checkbox" name="zusatzausstattung[]" value="Klimaanlage" id="klimaanlage">
-            <label for="klimaanlage">Klimaanlage</label>
-            <br/>
-            <input type="checkbox" name="zusatzausstattung[]" value="Navigator" id="navigator">
-            <label for="navigator">Navigator</label>
-            <br/>
-            <input type="checkbox" name="zusatzausstattung[]" value="Standheizung" id="Standheizung">
-            <label for="Standheizung">Standheizung</label>
-        </fieldset>
-        <br/>
-        <label for="abholort">Wo wollen sie das Auto abholen:</label>
-        <br/>
-        <select name="abholort" id="abholort">
-            <option value="TS">Tankstelle</option>
-            <option value="SB">S-Bahnstation</option>
-            <option value="AN" selected="selected">Autohaus Nettmann</option>
-            <option value="HBF">Hauptbahnhof</option>
-        </select>
-        <br/>
-        <br/>
+        ';
+
+    echo createFieldset(
+        'Welche Fahrzeugklasse bevorzugen Sie:',
+        Fahrzeugklasse::cases(),
+        'fahrzeugklasse',
+        'radio',
+        Fahrzeugklasse::KLEINWAGEN
+    );
+
+    echo createFieldset(
+        'Welche Zusatzausstattung wünschen Sie:',
+        Zusatzausstattung::cases(),
+        'zusatzausstattung[]',
+        'checkbox'
+    );
+
+    echo createSelect(
+        'abholort',
+        Abholort::cases(),
+        'Wo wollen sie das Auto abholen:',
+        Abholort::AN
+    );
+
+    echo '
         <input type="reset" value="Löschen">
         <button type="submit">Absenden</button>
     </form>
     ';
 }
 
-
+/**
+ * renderMietwagenBeleg renders the beleg for the mietwagen
+ *
+ * @return void
+ */
 function renderMietwagenBeleg() :void
 {
     echo "<main>";
     if (empty($_POST["kundennummer"])) {
-        echo "<h2 style='color: red;'>Bitte geben Sie eine Kundennummer ein!</h2>";
-        echo "<button><a href='mietwagenFormular.php' style='font-size: 2em; text-decoration: none'>Zurück zum Formular</a></button>";
+        echo "
+        <h2 style='color: red;'>Bitte geben Sie eine Kundennummer ein!</h2>
+        <button><a href='mietwagenFormular.php' style='font-size: 2em; text-decoration: none'>Zurück zum Formular</a></button>
+        ";
 
     } else {
         $values = $_POST;
-        $values['abholort'] = getAbholort($_POST["abholort"]);
         if ($values['abholort'] == 'unbekannt') {
-            echo "<h2 style='color: red;'>Bitte geben Sie einen gültigen Abholort ein!</h2>";
-            echo "<button><a href='mietwagenFormular.php' style='font-size: 2em; text-decoration: none'>Zurück zum Formular</a></button>";
+            echo "
+            <h2 style='color: red;'>Bitte geben Sie einen gültigen Abholort ein!</h2>
+            <button><a href='mietwagenFormular.php' style='font-size: 2em; text-decoration: none'>Zurück zum Formular</a></button>
+            ";
             return;
         }
 
         echo "<table>";
 
         foreach ($values as $key => $value) {
-            echo "<tr>";
+            $ucfKey = ucfirst($key);
+            echo "
+            <tr>
+            <td>$ucfKey:</td>
+            ";
             if ($key === "zusatzausstattung") {
-                echo "<td>Zusatzausstattung:</td>";
                 echo "<td>";
                 foreach ($value as $item) {
                     echo "<p>$item</p>";
                 }
                 echo "</td>";
             } else {
-                echo "<td>$key:</td>";
                 echo "<td>$value</td>";
             }
             echo "</tr>";
@@ -183,4 +193,98 @@ function renderMietwagenBeleg() :void
 
 }
 
+/**
+ * createInput creates an input element
+ *
+ * @param string $type
+ * @param string $kind
+ * @param string $name
+ * @param bool $checked
+ * @param bool $required
+ *
+ * @return string
+ */
+function createInput(string $type, string $kind, string $name, bool $checked = false, bool $required = false): string
+{
+    $ucfName = ucfirst($name);
+    $checked = $checked ? 'checked' : '';
+    $required = $required ? 'required' : '';
+    return "
+    <input type='$type' name='$kind' id='$name' value='$ucfName' $checked $required>
+    <label for='$name'>$ucfName</label>
+    <br/>
+    ";
+}
 
+/**
+ * createFieldset creates a fieldset
+ *
+ * @param string $legend
+ * @param array $entries
+ * @param string $kind
+ * @param string $type
+ * @param unitEnum|null $checkedElement
+ *
+ * @return string
+ */
+function createFieldset(string $legend, array $entries, string $kind, string $type, unitEnum $checkedElement = null): string
+{
+    $checkedElement = $checkedElement?->value;
+    $values = array_map(function($entry) {return $entry->value;}, $entries);
+
+    $result = "
+    <fieldset>
+        <legend>$legend</legend>
+    ";
+
+
+    for ($i = 0; $i < count($values); $i++) {
+        $value = $values[$i];
+        $checkedAndRequired = $value === $checkedElement;
+        $result .= createInput($type, $kind, $value, $checkedAndRequired, $checkedAndRequired);
+    }
+
+    $result .= "
+    </fieldset>
+    <br/>
+    ";
+
+    return $result;
+}
+
+/**
+ * createSelect creates a select element
+ *
+ * @param string $name
+ * @param array $entries
+ * @param string $labelContent
+ * @param unitEnum|null $selection
+ *
+ * @return string
+ */
+function createSelect(string $name, array $entries, string $labelContent, unitEnum $selection = null): string
+{
+    $selection = $selection?->value;
+    $values = array_map(function($entry) {return $entry->value;}, $entries);
+
+    $result = "
+    <label for='$name'>$labelContent</label>
+    <br/>
+        <select name='$name' id='$name'>
+    ";
+
+    foreach ($values as $value) {
+        $selected = $value == $selection ? 'selected=\'selected\'' : '';
+        $ucfValue = ucfirst($value);
+        $result .= "
+        <option value='$value' $selected>$ucfValue</option>";
+    }
+
+    $result .= "
+        </select>
+        <br/>
+        <br/>
+        ";
+    
+    return $result;
+}
