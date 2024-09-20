@@ -1,0 +1,31 @@
+{
+  "fahrzeugklasse": {
+    "kleinwagen": {
+        "name": "kleinwagen",
+        "preis": 29.99
+    },
+    "mittleklasse": {
+        "name": "mittleklasse",
+        "preis": 39.99
+    },
+    "familienwagen": {
+        "name": "familienwagen",
+        "preis": 49.99
+    },
+    "luxusklasse": {
+      "name": "luxusklasse",
+      "preis": 89.99
+    }
+  },
+  "zusatzausstattung": [
+    "klimaanlage",
+    "navigator",
+    "standheizung"
+  ],
+  "abholort": {
+    "TS": "Tankstelle",
+    "SB": "S-Bahnstation",
+    "AN": "Autohaus Nettmann",
+    "HBF": "Hauptbahnhof"
+  }
+}

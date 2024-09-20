@@ -1,13 +1,13 @@
 {
   "admin": {
     "username": "admin",
-    "password": "aDmin1423!",
-    "kundennummer": "admin@localhost"
+    "password": "123",
+    "kundennummer": "00000001"
   },
   "user": {
     "username": "user",
-    "password": "uSer1423!",
-    "kundennummer": "user@localhost"
+    "password": "123",
+    "kundennummer": "00000002"
   }
 }
 
