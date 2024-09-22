@@ -330,3 +330,40 @@ function getBrutto(float $netto): float
     return ceil($netto * 1.19 * 100) / 100;
 }
 
+/**
+ * createDBConnection creates a database connection
+ *
+ * @return PDO
+ */
+function createDBConnection(): PDO
+{
+    $dbConfig = json_decode(file_get_contents(__DIR__ . '/../../config/database.json'));
+    $dsn = "mysql:host={$dbConfig->host};dbname={$dbConfig->dbname};charset={$dbConfig->charset}";
+
+    try
+    {
+        $pdo = new PDO($dsn, $dbConfig->user, $dbConfig->password);
+    }
+    catch (PDOException $e){
+        exit("DB-Verbindungsfehler: :  " . $e->getMessage());
+    }
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    return $pdo;
+}
+
+/**
+ * getQueryResult gets the query result
+ *
+ * @param PDO $pdo
+ * @param string $query
+ *
+ * @return array
+ */
+function getQueryResult(PDO $pdo, string $query): array
+{
+    $stmt = $pdo->query($query);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+

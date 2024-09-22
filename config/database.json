@@ -1,0 +1,7 @@
+{
+  "host": "maria",
+  "user": "simulator",
+  "password": "",
+  "dbname": "rfidv5",
+  "charset": "utf8mb4"
+}

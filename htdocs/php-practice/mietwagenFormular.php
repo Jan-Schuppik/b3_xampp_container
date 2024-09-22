@@ -3,6 +3,9 @@ include 'NettmannFunktionen.inc.php';
 
 session_start();
 
+$db = createDBConnection();
+var_dump(getQueryResult($db, 'SELECT * FROM tblZutrittsversuche'));
+
 renderPage();
 
 /**
